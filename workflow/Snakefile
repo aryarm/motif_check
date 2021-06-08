@@ -1,0 +1,116 @@
+import warnings
+from pathlib import Path
+from snakemake.utils import min_version
+
+##### set minimum snakemake version #####
+min_version("6.4.1")
+
+# IMPORT CONFIG VARIABLES
+configfile: "config/config.yaml"
+data = config['data']
+out = config['out']
+scripts_dir = "workflow/scripts"
+
+
+rule all:
+    input: expand(out+"/{motif}/prc.png", motif=data.keys())
+
+rule get_peak_seqs:
+    input:
+        bed = lambda wildcards: data[wildcards.motif]['peaks'],
+        ref = config['ref']
+    output:
+        fasta = out+"/{motif}/peaks/width{width}.fa"
+    conda: "envs/meirlop.yml"
+    shell:
+        scripts_dir+"/center_and_widen.py {input.bed} {input.ref} {wildcards.width} 1 > {output.fasta}"
+
+rule get_wider_bed:
+    input: 
+        bed = lambda wildcards: data[wildcards.motif]['peaks'],
+    output:
+        wider = out+"/{motif}/peaks/width{width}.bed"
+    conda: "envs/meirlop.yml"
+    shell:
+        scripts_dir+"/center_and_widen_bed.py {input.bed} {wildcards.width} > {output.wider}"
+
+meirlop_output_dir = out+"/{motif}/meirlop/"
+rule meirlop:
+    input:
+        fasta = expand(rules.get_peak_seqs.output.fasta, width=150, motif='{motif}'),
+        motifs = lambda wildcards: data[wildcards.motif] # in JASPAR format!
+    params:
+        output_dir = meirlop_output_dir
+    output:
+        [
+            meirlop_output_dir+fname for fname in (
+                "cmdline.txt", "lr_input.tsv", "lr_results.tsv", "motif_lengths.tsv",
+                "motif_peak_set_dict.json", "motif_peak_set_dict.p", "peak_lengths.tsv"
+            )
+        ]
+    conda: "envs/meirlop.yml"
+    shell:
+        "meirlop --fa {input.fasta} {input.motifs} {params.output_dir}"
+
+rule get_top_motifs:
+    input:
+        meirlop_results = rules.meirlop.output[2],
+        motifs = lambda wildcards: data[wildcards.motif]
+    output:
+        motifs = out+"/{motif}/motifs/pval{pval}.motif"
+    conda: "envs/meirlop.yml"
+    shell:
+        "cat {input.motifs} | "+scripts_dir+"/jaspar2motif.py "
+        "$(awk -F $'\t' '$9 < {wildcards.pval}' {input.meirlop_results} | cut -d ' ' -f1 | paste -s -d ' ') | "
+        "sed '/^>/ s/>/>\t/; /^>/ s/$/\t0/' > {output.motifs}"
+
+rule pfm2pwm:
+    input:
+        pfm = rules.get_top_motifs.output.motifs
+    output:
+        pwm = out+"/{motif}/motifs/pval{pval}-pwm.motif"
+    conda: "envs/meirlop.yml"
+    shell:
+        "awk "+scripts_dir+"/pfm2pwm.awk -F $'\t' -v 'OFS=\t' {input.pfm} > {output.pwm}"
+
+rule scan_genome:
+    input:
+        motifs = expand(rules.pfm2pwm.output.pwm, pval=0.01, motif='{motif}'),
+        wide_peak = expand(rules.get_peak_seqs.output.fasta, width=650, motif='{motif}')
+    output:
+        all_motifs = out+"/{motif}/scan.tsv"
+    log: out+"/log/{motif}/scan.log"
+    conda: "envs/meirlop.yml"
+    shell:
+        "scanMotifGenomeWide.pl {input.motifs} {input.wide_peak} -bed > {output.all_motifs} 2>{log}"
+
+rule tsv2bed:
+    input:
+        tsv = rules.scan_genome.output.all_motifs
+    output:
+        bed = out+"/{motif}/scan.bed"
+    conda: "envs/meirlop.yml"
+    shell:
+        scripts_dir+"/fix_bed.bash {input.tsv} > {output.bed}"
+
+rule intersect:
+    input:
+        small_bed = rules.get_wider_bed.output.wider,
+        all_motifs = rules.scan_genome.output.all_motifs
+    output:
+        bed = out+"/{motif}/positives/width{width}.bed"
+    conda: "envs/meirlop.yml"
+    shell:
+        "bedtools intersect -wa -b {input.small_bed} -a {input.all_motifs} > {output.bed}"
+
+rule subtract:
+    input:
+        small_bed = rules.get_wider_bed.output.wider,
+        all_motifs = rules.scan_genome.output.all_motifs
+    output:
+        bed = out+"/{motif}/positives/width{width}.bed"
+    conda: "envs/meirlop.yml"
+    shell:
+        "bedtools subtract -A -b {input.small_bed} -a {input.all_motifs} > {output.bed}"   
+
+# rule c

@@ -1,0 +1,22 @@
+# This is the Snakemake configuration file that specifies paths and 
+# and options for the pipeline. Anybody wishing to use
+# the provided snakemake pipeline should first fill out this file with paths to
+# their own data, as the Snakefile requires it.
+# Every config option has reasonable defaults unless it is labeled as "required."
+# All paths are relative to the directory that Snakemake is executed in.
+# Note: this file is written in the YAML syntax (https://learnxinyminutes.com/docs/yaml/)
+
+
+# Path to each motif dataset
+# You must provide both the original ChIP-seq BED file and the motifs in JASPAR format
+data:
+  ctcf:
+    peaks: data/ctcf/ENCFF023LAA.nochr.bed.gz
+    motifs: data/ctcf/ctcf-chip-seq-ENCSR000BNH.jaspar
+
+# Path to a reference genome for the experiments
+ref: /gpfs/data01/bennerlab/species/genomes/homo_sapiens/genome.fa
+
+# Path to the results/output folder
+# This is usually overridden by whatever is in the run.bash script
+out: out

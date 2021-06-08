@@ -1,0 +1,6 @@
+channels:
+  # - bioconda
+  - conda-forge
+dependencies:
+  - npdeloss::meirlop==0.0.16
+  - bioconda::homer==4.11
