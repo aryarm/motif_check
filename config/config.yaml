@@ -2,7 +2,6 @@
 # and options for the pipeline. Anybody wishing to use
 # the provided snakemake pipeline should first fill out this file with paths to
 # their own data, as the Snakefile requires it.
-# Every config option has reasonable defaults unless it is labeled as "required."
 # All paths are relative to the directory that Snakemake is executed in.
 # Note: this file is written in the YAML syntax (https://learnxinyminutes.com/docs/yaml/)
 
@@ -16,6 +15,16 @@ data:
 
 # Path to a reference genome for the experiments
 ref: /gpfs/data01/bennerlab/species/genomes/homo_sapiens/genome.fa
+
+# Which widths should be used when labeling the center hits as positives?
+widths: [100, 150, 200, 300]
+
+# What threshold should be used on the scoring function when outputting metrics?
+score_thresh: 7.5
+
+# A threshold on the adjusted p-value from meirlop. All other motifs with higher p-vals
+# will be discarded
+pval_thresh: 0.01
 
 # Path to the results/output folder
 # This is usually overridden by whatever is in the run.bash script

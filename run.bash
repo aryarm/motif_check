@@ -30,3 +30,14 @@ snakemake \
 -k \
 -j 12 \
 "$@" 2>"$out_path/log/log" >"$out_path/log/qlog"
+
+# message the user on slack if possible
+exit_code="$?"
+if command -v 'slack' &>/dev/null; then
+    if [ "$exit_code" -eq 0 ]; then
+        slack "flower-mapping pipeline finished successfully" &>/dev/null
+    else
+        slack "flower-mapping pipeline exited with error code $exit_code"
+    fi
+fi
+exit "$exit_code"
