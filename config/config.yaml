@@ -12,6 +12,12 @@ data:
   ctcf:
     peaks: data/ctcf/ENCFF023LAA.nochr.bed.gz
     motifs: data/ctcf/ctcf-chip-seq-ENCSR000BNH.jaspar
+  ctcf_no-pretrain:
+    peaks: data/ctcf/ENCFF023LAA.nochr.bed.gz
+    motifs: data/ctcf/ctcf-chip-seq-ENCSR000BNH_no-pretrain.jaspar
+  nrf1:
+    peaks: data/nrf1/nrf1_data/ENCFF182QJW.nochr.bed.gz
+    motifs: data/nrf1/nrf1_dman/ENCFF182QJW.wide.scored.jaspar
 
 # Path to a reference genome for the experiments
 ref: /gpfs/data01/bennerlab/species/genomes/homo_sapiens/genome.fa

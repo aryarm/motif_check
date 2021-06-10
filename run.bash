@@ -35,9 +35,9 @@ snakemake \
 exit_code="$?"
 if command -v 'slack' &>/dev/null; then
     if [ "$exit_code" -eq 0 ]; then
-        slack "flower-mapping pipeline finished successfully" &>/dev/null
+        slack "de novo motif finding finished successfully" &>/dev/null
     else
-        slack "flower-mapping pipeline exited with error code $exit_code"
+        slack "de novo motif finding exited with error code $exit_code"
     fi
 fi
 exit "$exit_code"

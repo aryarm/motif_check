@@ -56,28 +56,28 @@ checkpoint meirlop:
     shell:
         "meirlop --fa {input.fasta} {input.motifs} {params.output_dir} 2>{log} 1>&2"
 
+wildcard_constraints:
+    pval="([0-9]*[.])?[0-9]+"
+
 rule get_specific_motif:
     input:
         motifs = lambda wildcards: data[wildcards.tf]['motifs']
     output:
-        motifs = out+"/{tf}/{motif}/motifs/pval{pval}.motif"
+        motifs = out+"/{tf}/{motif}/motifs/pval{pval}-pwm.motif"
     conda: "envs/meirlop.yml"
     wildcard_constraints:
-        motif = '^(?!all$)'
+        motif = '(?!all).*'
     shell:
-        "cat {input.motifs} | "+scripts_dir+"/jaspar2motif.py {wildcards.denovo} | "
+        "cat {input.motifs} | "+scripts_dir+"/jaspar2motif.py {wildcards.motif} | "
         "sed '/^>/ s/>/>\\t/; /^>/ s/$/\\t0/' | "
         "awk -f "+scripts_dir+"/pfm2pwm.awk -F $'\\t' -v 'OFS=\\t' > {output.motifs}"
-
-wildcard_constraints:
-    pval="([0-9]*[.])?[0-9]+"
 
 rule get_top_motifs:
     input:
         meirlop_results = rules.meirlop.output[2],
         motifs = lambda wildcards: data[wildcards.tf]['motifs']
     output:
-        motifs = out+"/{tf}/{motif}/motifs/pval{pval}.motif"
+        motifs = out+"/{tf}/all/motifs/pval{pval}.motif"
     conda: "envs/meirlop.yml"
     shell:
         "cat {input.motifs} | "+scripts_dir+"/jaspar2motif.py "
@@ -88,21 +88,17 @@ rule pfm2pwm:
     input:
         pfm = rules.get_top_motifs.output.motifs
     output:
-        pwm = out+"/{tf}/{motif}/motifs/pval{pval}-pwm.motif"
+        pwm = out+"/{tf}/all/motifs/pval{pval}-pwm.motif"
     conda: "envs/meirlop.yml"
     shell:
         "awk -f "+scripts_dir+"/pfm2pwm.awk -F $'\\t' -v 'OFS=\\t' {input.pfm} > {output.pwm}"
 
-def get_scan_genome_input(wildcards):
-    if wildcards.motif == 'all':
-        fname = rules.pfm2pwm.output.pwm
-    else:
-        fname = rules.get_specific_motif.output.motifs
-    return expand(fname, pval=config['pval_thresh'], tf='{tf}', motif='{motif}')
-
 rule scan_genome:
     input:
-        motifs = get_scan_genome_input,
+        motifs = expand(
+            out+"/{tf}/{motif}/motifs/pval{pval}-pwm.motif",
+            pval=config['pval_thresh'], tf='{tf}', motif='{motif}'
+        ),
         wide_peak = expand(rules.get_peak_seqs.output.fasta, width=650, tf='{tf}', concat_chr=0)
     output:
         all_motifs = temp(out+"/{tf}/{motif}/scan.tsv")
@@ -156,10 +152,10 @@ rule prc_stats:
     input:
         results = rules.combine.output.bed
     output:
-        stats = out+"/{tf}/{motif}/width{width}/stats.tsv"
+        stats = out+"/{tf}/{motif}/width{width}/stats.tsv.gz"
     conda: "envs/meirlop.yml"
     shell:
-        scripts_dir+"/statistics.py -f -o {output.stats} {input.results}"
+        scripts_dir+"/statistics.py -o {output.stats} {input.results}"
 
 rule score_metrics:
     input:
