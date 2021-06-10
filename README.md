@@ -5,14 +5,9 @@
 Evaluate de novo motif finding tools. Create precision/recall plots and compute performance metrics, by labeling motifs around ChIP-seq summits as positives.
 
 # download
-Execute the following command or download the [latest release](https://github.com/aryarm/motif_check/releases/latest) manually.
+Execute the following command.
 ```
 git clone https://github.com/aryarm/motif_check.git
-```
-Also consider downloading the [example data](https://github.com/aryarm/motif_check/releases/latest/download/data.tar.gz).
-```
-cd motif_check
-wget -O- -q https://github.com/aryarm/motif_check/releases/latest/download/data.tar.gz | tar xvzf -
 ```
 
 # setup
