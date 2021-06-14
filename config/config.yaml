@@ -18,6 +18,9 @@ data:
   nrf1:
     peaks: data/nrf1/nrf1_data/ENCFF182QJW.nochr.bed.gz
     motifs: data/nrf1/nrf1_dman/ENCFF182QJW.wide.scored.jaspar
+  nrf1_homer:
+    peaks: data/nrf1/nrf1_data/ENCFF182QJW.nochr.bed.gz
+    motifs: data/nrf1_homer/homerMotifs.all.pfm.fixed2.jaspar
 
 # Path to a reference genome for the experiments
 ref: /gpfs/data01/bennerlab/species/genomes/homo_sapiens/genome.fa
